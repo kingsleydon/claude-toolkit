@@ -3,7 +3,6 @@ name: code-reviewer
 description: |
   Opinionated code reviewer that enforces strict TypeScript and Python quality standards.
   Catches type safety hacks, missing error handling, i18n gaps, security issues, and code duplication.
-  Trigger: Claude auto-invokes when reviewing code or when user says "review", "check quality", "audit code".
 model: sonnet
 ---
 

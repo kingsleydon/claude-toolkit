@@ -1,16 +1,23 @@
-#!/bin/sh
+#!/bin/bash
 # Claude Code custom statusline — shows cwd, git branch, model, and context usage
 # with color-coded context percentage (green < 50%, yellow 50-80%, red > 80%)
 #
+# Requires: jq (brew install jq)
+#
 # Installation:
-#   1. Copy this file to ~/.claude/statusline-command.sh
+#   1. Copy this file to ~/.claude/statusline.sh
 #   2. Add to your Claude Code settings (~/.claude/settings.json):
 #      {
 #        "statusLine": {
 #          "type": "command",
-#          "command": "bash ~/.claude/statusline-command.sh"
+#          "command": "bash ~/.claude/statusline.sh"
 #        }
 #      }
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "jq required"
+  exit 1
+fi
 
 input=$(cat)
 cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // "?"')
