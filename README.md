@@ -1,54 +1,41 @@
 # claude-toolkit
 
-A collection of custom Claude Code skills, agents, and utilities for enhanced development workflows.
+A marketplace of custom Claude Code plugins with skills, agents, and utilities.
 
-## Components
+## Plugins
 
-### Skills
+### claude-toolkit
 
-#### [parallel-codex](skills/parallel-codex/SKILL.md)
+#### Skills
 
-Parallel dual-track analysis mode that runs Claude Code and OpenAI Codex simultaneously for read-only analysis, then synthesizes findings from both before executing changes.
+**[parallel-codex](plugins/claude-toolkit/skills/parallel-codex/SKILL.md)** — Parallel dual-track analysis mode that runs Claude Code and OpenAI Codex simultaneously for read-only analysis, then synthesizes findings before executing.
 
-**Trigger words:** `parallel codex`, `dual-track`, `parallel analysis`, `second opinion`, `parallel review`
+- **Trigger words:** `parallel codex`, `dual-track`, `parallel analysis`, `second opinion`, `parallel review`
+- **Prerequisites:** [Codex CLI](https://github.com/openai/codex) (`npm i -g @openai/codex`) — works without Codex in degraded mode (Claude Code only).
 
-**Prerequisites:** [Codex CLI](https://github.com/openai/codex) (`npm i -g @openai/codex`) — degrades gracefully if not installed.
+#### Agents
 
-### Agents
-
-#### [code-reviewer](agents/code-reviewer.md)
-
-Opinionated code review agent that enforces strict quality standards:
+**[code-reviewer](plugins/claude-toolkit/agents/code-reviewer.md)** — Opinionated code review agent enforcing strict quality standards:
 
 - Zero tolerance for `as any`, `!` assertions, `@ts-ignore`
 - Every async action must have error handling
 - All user-facing text must be i18n-wrapped
 - Security: input validation, no exposed internals, escaped queries
-- Flag code duplication (3+ occurrences → extract utility)
+- Flag code duplication (3+ occurrences)
 - Fix pre-existing issues in touched files
 
-### Extras
+#### Extras
 
-#### [statusline](extras/statusline/)
+**[statusline](plugins/claude-toolkit/extras/statusline/)** — Custom statusline showing directory, git branch, model, and context usage with color coding.
 
-Custom Claude Code statusline script showing:
-- Current directory (shortened)
-- Git branch
-- Model name
-- Context window usage with color coding (green → yellow → red)
-
-See [statusline.sh](extras/statusline/statusline.sh) for installation instructions.
+See [statusline.sh](plugins/claude-toolkit/extras/statusline/statusline.sh) for installation instructions.
 
 ## Installation
 
-Install as a Claude Code plugin:
-
 ```
 /plugin marketplace add kingsleydon/claude-toolkit
-/plugin install claude-toolkit
+/plugin install claude-toolkit@kingsleydon-claude-toolkit
 ```
-
-> **Note:** The `extras/` directory contains standalone utilities that need manual setup — see each extra's own instructions.
 
 ## License
 

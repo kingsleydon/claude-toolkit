@@ -1,12 +1,17 @@
 {
   "name": "kingsleydon-claude-toolkit",
   "owner": {
-    "name": "kingsleydon"
+    "name": "kingsleydon",
+    "url": "https://github.com/kingsleydon"
+  },
+  "metadata": {
+    "description": "Custom Claude Code skills, agents, and utilities for enhanced development workflows",
+    "version": "1.1.0"
   },
   "plugins": [
     {
       "name": "claude-toolkit",
-      "source": ".",
+      "source": "./plugins/claude-toolkit",
       "description": "Custom Claude Code skills, agents, and utilities for enhanced development workflows",
       "version": "1.1.0"
     }
