@@ -1,11 +1,11 @@
 {
-  "name": "claude-skills",
-  "description": "A collection of custom Claude Code skills for enhanced development workflows",
-  "version": "1.0.0",
+  "name": "claude-toolkit",
+  "description": "A collection of custom Claude Code skills, agents, and utilities for enhanced development workflows",
+  "version": "1.1.0",
   "author": {
     "name": "kingsleydon"
   },
-  "homepage": "https://github.com/kingsleydon/claude-skills",
-  "repository": "https://github.com/kingsleydon/claude-skills",
+  "homepage": "https://github.com/kingsleydon/claude-toolkit",
+  "repository": "https://github.com/kingsleydon/claude-toolkit",
   "license": "MIT"
 }
