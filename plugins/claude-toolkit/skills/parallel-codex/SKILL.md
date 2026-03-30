@@ -5,207 +5,94 @@ description: |
   then synthesize findings from both before executing.
   Trigger words: "parallel codex", "dual-track", "parallel analysis", "codex analysis", "let codex check",
   "second opinion", "comparative analysis", "parallel review", "dual-track analysis"
-allowed-tools: Read, Grep, Glob, Write, Task, Bash(codex:*), Bash(cat:*), Bash(ls:*), Bash(tree:*), Bash(tail:*), Bash(wait:*), Bash(kill:*), Bash(mkdir:*), Bash(echo:*), Bash(rm:*), Bash(wc:*)
+allowed-tools: Read, Grep, Glob, Write, Agent, Bash(cat:*), Bash(ls:*)
 ---
 
-# Parallel Codex — Dual-Track Analysis → Synthesis → Execution
+# Parallel Codex — Dual-Track Analysis
+
+<purpose>
+Run Claude Code and Codex as independent analysts on the same task, then synthesize
+a unified recommendation before touching any code.
+</purpose>
+
+<prerequisites>
+This skill requires the official `openai/codex` plugin to be installed.
+If not installed, inform the user and fall back to Claude Code-only analysis.
+</prerequisites>
 
 ## Workflow
 
 ```
-         User submits task
-              │
-    ┌─────────┴─────────┐
-    ▼                   ▼
- Claude Code          Codex
- read-only analysis  read-only analysis
- (via Explore        (codex exec
-  subagent)           -s read-only)
-    │                   │
-    └─────────┬─────────┘
-              ▼
-       Claude Code Synthesis
-       Compare findings from both,
-       produce unified analysis report
-              │
-              ▼
-       Claude Code Review
-       Confirm plan, fill in gaps
-              │
-              ▼
-       Claude Code Execution
-       Implement final plan
+       User submits task
+            │
+  ┌─────────┴─────────┐
+  ▼                   ▼
+Claude Code         Codex
+(Explore agent)     (codex:rescue agent)
+read-only           read-only
+  │                   │
+  └─────────┬─────────┘
+            ▼
+     Synthesize findings
+            │
+            ▼
+     User confirms plan
+            │
+            ▼
+     Execute changes
 ```
-
-## Phase 0: Pre-flight Check
-
-Verify Codex CLI is available before starting:
-
-```bash
-codex --version 2>/dev/null || echo "CODEX_NOT_INSTALLED"
-```
-
-If output is `CODEX_NOT_INSTALLED`, inform the user:
-> Codex CLI is not installed. Please run `npm i -g @openai/codex` to install, then retry.
-
-Then complete analysis and execution using Claude Code alone (degraded mode).
 
 ## Phase 1: Parallel Read-Only Analysis
 
-### 1a. Construct Codex analysis prompt and launch in background
+Launch both analyses concurrently using the Agent tool in a single message:
 
-Based on the user's task, construct a targeted analysis prompt, write it to a temp file, then launch Codex in the background.
+<agent_dispatch>
 
-```bash
-mkdir -p /tmp/parallel-codex
-SESSION_ID="$(date +%s)-$(openssl rand -hex 4)"
-echo "$SESSION_ID" > /tmp/parallel-codex/current-session
+**Agent A — Claude Code Explore:**
+- Use `subagent_type: Explore` with thoroughness "very thorough"
+- Prompt: the user's task framed as a read-only analysis question
+- Tools: Read, Grep, Glob only — no writes
 
-cat > /tmp/parallel-codex/prompt-${SESSION_ID}.md << 'PROMPT_EOF'
-You are a senior code analyst. Perform a read-only analysis of the current project. Do not modify any files.
+**Agent B — Codex Rescue:**
+- Use `subagent_type: codex:codex-rescue`
+- Prompt: the same task, prefixed with "Perform read-only analysis only. Do not modify files."
+- Let the official codex plugin handle CLI invocation, auth, and cleanup
 
-## Analysis Task
+Both agents MUST be dispatched in the same message for true parallelism.
+</agent_dispatch>
 
-[Fill in based on the user's specific question — be concrete and specific]
+<write_guard>
+Write and Edit tools are ONLY permitted after user confirmation in Phase 3.
+During Phases 1-2, all analysis is strictly read-only.
+</write_guard>
 
-## Output your analysis in the following structure
+## Phase 2: Synthesize
 
-### 1. Current State Assessment
-- Relevant code files and their responsibilities
-- Pros and cons of the current implementation
+After both agents return, compare their findings and present:
 
-### 2. Recommended Approach
-- Recommended solution and rationale
-- Alternative approaches
-- Tradeoffs for each approach
-
-### 3. Risks and Edge Cases
-- Potential bugs and edge cases
-- Performance risks
-- Security concerns
-- Compatibility issues
-
-### 4. Implementation Suggestions
-- Recommended order of changes
-- Dependencies to be aware of
-- Suggested test cases
-PROMPT_EOF
-
-codex exec \
-  -s read-only \
-  - < /tmp/parallel-codex/prompt-${SESSION_ID}.md \
-  -o /tmp/parallel-codex/codex-result-${SESSION_ID}.md \
-  2>/tmp/parallel-codex/codex-stderr-${SESSION_ID}.log &
-
-echo $! > /tmp/parallel-codex/pid-${SESSION_ID}
-```
-
-**Key rules:**
-- Do not pass `-m` unless the user explicitly specifies a model
-- Always use `-s read-only`
-- Use `-o` to output to a file, redirect stderr to a log
-
-### 1b. Claude Code performs read-only analysis concurrently
-
-While Codex runs in the background, Claude Code also performs read-only analysis on the same problem:
-
-- Use read-only tools: Read, Grep, Glob, etc.
-- Read relevant source files
-- Understand code structure and dependencies
-- Form independent analysis conclusions
-
-**Important: Claude Code must NOT perform any write operations during Phase 1.**
-
-Hold Claude Code's analysis conclusions in memory, pending merge with Codex results.
-
-## Phase 2: Synthesize Both Analyses
-
-### 2a. Read Codex analysis results
-
-```bash
-SESSION_ID=$(cat /tmp/parallel-codex/current-session)
-
-# Wait for Codex to finish (up to 5 minutes)
-if [ -f /tmp/parallel-codex/pid-${SESSION_ID} ]; then
-  CODEX_PID=$(cat /tmp/parallel-codex/pid-${SESSION_ID})
-  WAIT_COUNT=0
-  while kill -0 $CODEX_PID 2>/dev/null; do
-    sleep 5
-    WAIT_COUNT=$((WAIT_COUNT + 1))
-    if [ $WAIT_COUNT -ge 60 ]; then
-      echo "CODEX_TIMEOUT"
-      kill $CODEX_PID 2>/dev/null
-      break
-    fi
-  done
-fi
-
-# Read results
-if [ -f /tmp/parallel-codex/codex-result-${SESSION_ID}.md ]; then
-  cat /tmp/parallel-codex/codex-result-${SESSION_ID}.md
-else
-  echo "CODEX_NO_OUTPUT"
-  cat /tmp/parallel-codex/codex-stderr-${SESSION_ID}.log 2>/dev/null | tail -20
-fi
-```
-
-### 2b. Output synthesized analysis report
-
-Compare both analyses and present to the user in this format:
-
-```
+<output_format>
 ## Dual-Track Analysis Report
 
-### Consensus Findings
-- [Issues and approaches both sides agree on]
+### Consensus
+- [Findings both sides agree on]
 
-### Claude Code Unique Findings
-- [Things Claude found that Codex did not mention]
+### Claude Code Only
+- [Unique findings from Claude Code]
 
-### Codex Unique Findings
-- [Things Codex pointed out that Claude missed]
+### Codex Only
+- [Unique findings from Codex]
 
-### Points of Divergence
-- [Areas where the two disagree, with rationale from each]
+### Divergence
+- [Disagreements with rationale from each side]
 
-### Synthesized Recommendation
-- [Optimal approach after combining both analyses]
-- [Key risks to watch for]
-- [Implementation steps]
-```
+### Recommendation
+- [Unified approach combining the best of both]
+- [Key risks]
+- [Implementation order]
+</output_format>
 
-## Phase 3: Review + Confirmation
+## Phase 3: Confirm + Execute
 
-After presenting the synthesized report, **wait for user confirmation** before executing:
+Present the report and wait for user confirmation before making any changes.
 
-> Above is the synthesized conclusion from dual-track analysis. I will proceed with the recommended plan once you confirm.
-> Would you like to adjust anything, or shall I execute?
-
-## Phase 4: Execution
-
-After user confirmation, execute according to the synthesized plan:
-- Modify code
-- Run tests
-- Output change summary
-
-## Phase 5: Cleanup
-
-```bash
-SESSION_ID=$(cat /tmp/parallel-codex/current-session 2>/dev/null)
-if [ -n "$SESSION_ID" ]; then
-  rm -f /tmp/parallel-codex/prompt-${SESSION_ID}.md
-  rm -f /tmp/parallel-codex/codex-result-${SESSION_ID}.md
-  rm -f /tmp/parallel-codex/codex-stderr-${SESSION_ID}.log
-  rm -f /tmp/parallel-codex/pid-${SESSION_ID}
-  rm -f /tmp/parallel-codex/current-session
-fi
-```
-
-## Degraded Mode Handling
-
-| Scenario | Action |
-|----------|--------|
-| Codex not installed | Claude Code analysis only; prompt user to install Codex |
-| Codex timeout | Continue with Claude Code results; note Codex timed out |
-| Codex output empty | Check stderr log, report error, continue execution |
-| Codex auth expired | Prompt user to run `codex auth`; continue with Claude Code only |
+After confirmation, execute according to the synthesized plan.

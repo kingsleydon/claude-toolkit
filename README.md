@@ -8,21 +8,21 @@ A marketplace of custom Claude Code plugins with skills, agents, and utilities.
 
 #### Skills
 
-**[parallel-codex](plugins/claude-toolkit/skills/parallel-codex/SKILL.md)** — Parallel dual-track analysis mode that runs Claude Code and OpenAI Codex simultaneously for read-only analysis, then synthesizes findings before executing.
+**[parallel-codex](plugins/claude-toolkit/skills/parallel-codex/SKILL.md)** — Dual-track analysis: dispatches Claude Code and Codex as parallel read-only analysts, then synthesizes a unified recommendation.
 
-- **Trigger words:** `parallel codex`, `dual-track`, `parallel analysis`, `second opinion`, `parallel review`
-- **Prerequisites:** [Codex CLI](https://github.com/openai/codex) (`npm i -g @openai/codex`) — works without Codex in degraded mode (Claude Code only).
+- **Trigger words:** `parallel codex`, `dual-track`, `parallel analysis`, `codex analysis`, `let codex check`, `second opinion`, `comparative analysis`, `parallel review`, `dual-track analysis`
+- **Requires:** openai/codex plugin installed via marketplace
 
 #### Agents
 
-**[code-reviewer](plugins/claude-toolkit/agents/code-reviewer.md)** — Opinionated code review agent enforcing strict quality standards:
+**[code-reviewer](plugins/claude-toolkit/agents/code-reviewer.md)** — Opinionated code review with structured JSON output:
 
 - Zero tolerance for `as any`, `!` assertions, `@ts-ignore`
 - Every async action must have error handling
 - All user-facing text must be i18n-wrapped
 - Security: input validation, no exposed internals, escaped queries
 - Flag code duplication (3+ occurrences)
-- Fix pre-existing issues in touched files
+- Structured JSON output with severity, confidence, and rule classification ([schema](plugins/claude-toolkit/schemas/review-output.schema.json))
 
 #### Extras
 
