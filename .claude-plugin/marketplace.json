@@ -5,15 +5,13 @@
     "url": "https://github.com/kingsleydon"
   },
   "metadata": {
-    "description": "Custom Claude Code skills, agents, and utilities for enhanced development workflows",
-    "version": "2.0.0"
+    "description": "Custom Claude Code skills, agents, and utilities for enhanced development workflows"
   },
   "plugins": [
     {
       "name": "claude-toolkit",
       "source": "./plugins/claude-toolkit",
-      "description": "Custom Claude Code skills, agents, and utilities for enhanced development workflows",
-      "version": "2.0.0"
+      "description": "Custom Claude Code skills, agents, and utilities for enhanced development workflows"
     }
   ]
 }
